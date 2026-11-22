@@ -45,7 +45,7 @@ fn main() {
     );
     println!("Enemy: {}", enemy.kind);
 
-    loop {
+    'battle: loop {
         println!("Player: {} HP", player.health);
         println!("Enemy: {} HP", enemy.health);
 
@@ -80,7 +80,7 @@ fn main() {
 
             if enemy.health == 0 {
                 println!("You Win!");
-                std::process::exit(0);
+                break 'battle;
             }
         }
 
@@ -100,7 +100,7 @@ fn main() {
 
         if player.health == 0 {
             println!("You died...");
-            std::process::exit(0);
+            break 'battle;
         }
     }
 }
