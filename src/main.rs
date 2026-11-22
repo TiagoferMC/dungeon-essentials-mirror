@@ -86,8 +86,8 @@ fn main() {
 
         // Enemy attack
         for _ in 0..input_window_size {
-            let is_fav: bool = rand::random_bool(80.0 / 100.0);
-            let command: Command = if is_fav {
+            let favored: bool = rand::random_bool(80.0 / 100.0);
+            let command: Command = if favored {
                 let mut rng = rand::rng();
                 *enemy.favored_commands.choose(&mut rng).unwrap()
             } else {
