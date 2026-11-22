@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::character::*;
 use crate::types::*;
 
@@ -35,6 +37,77 @@ pub struct Weapon {
     pub max_durability: usize,
 }
 
+pub enum DurabilityStatus {
+    Prime,
+    WornOut1,
+    WornOut2,
+    WornOut3,
+    Broken,
+}
+
+impl Display for DurabilityStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Prime => write!(f, "Prime"),
+            Self::WornOut1 => write!(f, "Worn Out (1)"),
+            Self::WornOut2 => write!(f, "Worn Out (2)"),
+            Self::WornOut3 => write!(f, "Worn Out (3)"),
+            Self::Broken => write!(f, "Broken"),
+        }
+    }
+}
+
+pub trait ItemDamageable {
+    fn get_durability(&self) -> usize;
+    fn get_durability_mut(&mut self) -> &mut usize;
+    fn get_max_durability(&self) -> usize;
+    fn get_durability_percent(&self) -> usize;
+
+    fn take_damage(&mut self, damage: usize) {
+        let durability: &mut usize = self.get_durability_mut();
+        *durability = durability.saturating_sub(damage);
+        println!("Weapon Took {damage} damage");
+        println!("New durability {}", durability);
+    }
+
+    fn get_durability_status(&self) -> DurabilityStatus {
+        match self.get_durability_percent() {
+            0 => DurabilityStatus::Broken,
+            x if x <= 5 => DurabilityStatus::WornOut3,
+            x if x <= 20 => DurabilityStatus::WornOut2,
+            x if x <= 50 => DurabilityStatus::WornOut1,
+            x if x <= 100 => DurabilityStatus::Prime,
+            _ => panic!("Invalid percentage"),
+        }
+    }
+}
+
+macro_rules! impl_item_damageable {
+    ($($t:ty),*) => {
+        $(
+            impl ItemDamageable for $t {
+                fn get_durability(&self) -> usize {
+                    self.durability
+                }
+
+                fn get_durability_mut(&mut self) -> &mut usize {
+                    &mut self.durability
+                }
+
+                fn get_max_durability(&self) -> usize {
+                    self.max_durability
+                }
+
+                fn get_durability_percent(&self) -> usize {
+                    (self.durability as f32 / self.max_durability as f32 * 100.0) as usize
+                }
+            }
+        )*
+    };
+}
+
+impl_item_damageable!(Weapon, Armor);
+
 #[derive(Copy, Clone)]
 pub struct Consumable {
     pub action_cost: usize,
@@ -59,29 +132,26 @@ impl Default for Weapon {
     }
 }
 
-pub trait Equippable {
-    fn get_damage_percent(&self) -> f32;
-
-    fn get_damage_status(&self) -> String {
-        match self.get_damage_percent() {
-            0.0 => "Broken".to_string(),
-            x if x < 5.0 => "Worn Out (3)".to_string(),
-            5.0..20.0 => "Worn Out (2)".to_string(),
-            20.0..50.0 => "Worn Out (1)".to_string(),
-            50.0..=100.0 => "Prime".to_string(),
-            _ => panic!("Invalid percentage!"),
+macro_rules! make_holdable {
+    ($($f:ident => $t:ty),*) => {
+        impl Holdable {
+            $(
+                pub fn $f(&mut self) -> Option<$t> {
+                    match self {
+                        Holdable::Weapon(weapon) => Some(weapon.$f()),
+                        Holdable::Shield(shield) => Some(shield.$f()),
+                        Holdable::Consumable(_) => None,
+                    }
+                }
+            )*
         }
-    }
+    };
 }
 
-impl Equippable for Armor {
-    fn get_damage_percent(&self) -> f32 {
-        self.durability as f32 / self.max_durability as f32
-    }
-}
-
-impl Equippable for Weapon {
-    fn get_damage_percent(&self) -> f32 {
-        self.durability as f32 / self.max_durability as f32
-    }
+make_holdable! {
+    get_durability => usize,
+    get_durability_mut => &mut usize,
+    get_max_durability => usize,
+    get_durability_percent => usize,
+    get_durability_status => DurabilityStatus
 }

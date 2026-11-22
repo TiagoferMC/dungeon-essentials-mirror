@@ -11,10 +11,10 @@ use dungeon_essentials::{
 fn main() {
     let input_window_size: usize = 3;
 
-    let mut enemy: Enemy = Enemy::random();
+    let mut enemy: Enemy = Enemy::dragon();
 
     let sword: Weapon = Weapon {
-        base_damage: 200,
+        base_damage: 100,
         stat_scaling: (Stat::Strike, 50),
         hard_damage: 2,
         climb: 4,
@@ -32,7 +32,7 @@ fn main() {
         name: "Adventurer".to_string(),
         level: 1,
         class: Class::Hero,
-        health: 500,
+        health: 10000,
         charge: 1000,
         essence: 1000,
         inventory,
@@ -46,6 +46,34 @@ fn main() {
     println!("Enemy: {}", enemy.kind);
 
     'battle: loop {
+        println!(
+            "{}/{} - {}% - {}",
+            player
+                .inventory
+                .main_hand
+                .unwrap()
+                .get_durability()
+                .unwrap(),
+            player
+                .inventory
+                .main_hand
+                .unwrap()
+                .get_max_durability()
+                .unwrap(),
+            player
+                .inventory
+                .main_hand
+                .unwrap()
+                .get_durability_percent()
+                .unwrap(),
+            player
+                .inventory
+                .main_hand
+                .unwrap()
+                .get_durability_status()
+                .unwrap()
+        );
+
         println!("Player: {} HP", player.health);
         println!("Enemy: {} HP", enemy.health);
 
@@ -76,6 +104,10 @@ fn main() {
                     player.attack(&mut enemy, command)
                 }
                 _ => (),
+            }
+
+            if let Some(weapon) = player.get_weapon_mut() {
+                weapon.take_damage(50);
             }
 
             if enemy.health == 0 {
